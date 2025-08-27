@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,108 +26,120 @@ import {
   Eye,
   EyeOff,
   Activity,
+  Loader,
+  RefreshCw
 } from "lucide-react"
 
 interface Transaction {
   id: string
-  hash: string
-  type: "send" | "receive"
-  amount: number
   from: string
   to: string
-  timestamp: Date
-  status: "confirmed" | "pending" | "failed"
-  blockNumber: number
+  amount: number
+  timestamp: string
+  signature: string
+  status: 'pending' | 'confirmed' | 'failed'
+  blockHash?: string
+  blockNumber?: number
   gasUsed: number
   gasPrice: number
+  fee: number
+}
+
+interface WalletInfo {
+  address: string
+  balance: number
+  created: string
+  transactions: {
+    total: number
+    sent: number
+    received: number
+    totalSent: number
+    totalReceived: number
+    recent: Transaction[]
+  }
 }
 
 export default function WalletPage() {
-  const [balance, setBalance] = useState(1250.75)
-  const [usdValue, setUsdValue] = useState(2501.5)
-  const [walletAddress] = useState("0x742d35Cc6634C0532925a3b8D4C0532925a3b8D4")
+  const router = useRouter()
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showBalance, setShowBalance] = useState(true)
+  const [usdValue, setUsdValue] = useState(0)
 
   // Send functionality states
   const [recipient, setRecipient] = useState("")
   const [sendAmount, setSendAmount] = useState("")
-  const [gasPrice, setGasPrice] = useState("20")
+  const [gasPrice, setGasPrice] = useState("0.001")
   const [isLoading, setIsLoading] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [sendError, setSendError] = useState("")
 
   // Transaction history states
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFilter, setSelectedFilter] = useState("all")
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([])
+  const [transactionsLoading, setTransactionsLoading] = useState(false)
 
-  const transactions: Transaction[] = [
-    {
-      id: "1",
-      hash: "0xabc123def456ghi789jkl012mno345pqr678stu901vwx234yz",
-      type: "receive",
-      amount: 100,
-      from: "0x742d35Cc6634C0532925a3b8D4C0532925a3b8D4",
-      to: walletAddress,
-      timestamp: new Date("2024-01-15T10:30:00"),
-      status: "confirmed",
-      blockNumber: 18500123,
-      gasUsed: 21000,
-      gasPrice: 20,
-    },
-    {
-      id: "2",
-      hash: "0xdef456ghi789jkl012mno345pqr678stu901vwx234yz567abc",
-      type: "send",
-      amount: 50,
-      from: walletAddress,
-      to: "0x987654321fedcba987654321fedcba987654321f",
-      timestamp: new Date("2024-01-14T15:45:00"),
-      status: "confirmed",
-      blockNumber: 18499876,
-      gasUsed: 21000,
-      gasPrice: 18,
-    },
-    {
-      id: "3",
-      hash: "0xghi789jkl012mno345pqr678stu901vwx234yz567abc123def",
-      type: "receive",
-      amount: 200,
-      from: "0x456789abcdef123456789abcdef123456789abcdef1",
-      to: walletAddress,
-      timestamp: new Date("2024-01-13T09:15:00"),
-      status: "confirmed",
-      blockNumber: 18498654,
-      gasUsed: 21000,
-      gasPrice: 22,
-    },
-    {
-      id: "4",
-      hash: "0xjkl012mno345pqr678stu901vwx234yz567abc123def456ghi",
-      type: "send",
-      amount: 25,
-      from: walletAddress,
-      to: "0xabcdef123456789abcdef123456789abcdef123456",
-      timestamp: new Date("2024-01-12T14:20:00"),
-      status: "pending",
-      blockNumber: 0,
-      gasUsed: 0,
-      gasPrice: 25,
-    },
-    {
-      id: "5",
-      hash: "0xmno345pqr678stu901vwx234yz567abc123def456ghi789jkl",
-      type: "receive",
-      amount: 75,
-      from: "0x123abc456def789ghi012jkl345mno678pqr901stu",
-      to: walletAddress,
-      timestamp: new Date("2024-01-11T16:45:00"),
-      status: "confirmed",
-      blockNumber: 18497321,
-      gasUsed: 21000,
-      gasPrice: 19,
-    },
-  ]
+  useEffect(() => {
+    loadWalletData()
+  }, [])
 
-  const estimatedFee = 0.001
+  const loadWalletData = async () => {
+    const walletAddress = localStorage.getItem('currentWalletAddress')
+    if (!walletAddress) {
+      router.push('/')
+      return
+    }
+
+    console.log("pass here")
+
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/wallet/${walletAddress}`)
+      const data = await response.json()
+
+      console.log(`Loaded wallet success: ${JSON.stringify(data.data)}`);
+
+      if (data.success) {
+        console.log(`Loaded wallet: ${JSON.stringify(data.data)}`);
+        setWalletInfo(data.data)
+        setUsdValue(data.data.balance * 2) // Mock USD conversion rate
+        
+        // Load all transactions
+        await loadTransactions(walletAddress)
+      } else {
+        console.error('Failed to load wallet:', data.error)
+        router.push('/')
+      }
+    } catch (error) {
+      console.error('Error loading wallet:', error)
+      router.push('/')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadTransactions = async (address: string) => {
+    try {
+      setTransactionsLoading(true)
+      const response = await fetch(`/api/transactions?address=${address}&limit=100`)
+      const data = await response.json()
+
+      if (data.success) {
+        setAllTransactions(data.data.transactions)
+      }
+    } catch (error) {
+      console.error('Error loading transactions:', error)
+    } finally {
+      setTransactionsLoading(false)
+    }
+  }
+
+  const refreshData = () => {
+    loadWalletData()
+  }
+
+  const estimatedFee = parseFloat(gasPrice) * 21000
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -140,75 +153,109 @@ export default function WalletPage() {
     return `${hash.slice(0, 10)}...${hash.slice(-8)}`
   }
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
     return date.toLocaleDateString() + " " + date.toLocaleTimeString()
   }
 
   const isValidAddress = (address: string) => {
-    return address.length === 42 && address.startsWith("0x")
+    return /^0x[a-fA-F0-9]{40}$/.test(address)
   }
 
-  const canSend =
+  const canSend = walletInfo &&
     recipient &&
     sendAmount &&
     isValidAddress(recipient) &&
-    Number.parseFloat(sendAmount) > 0 &&
-    Number.parseFloat(sendAmount) <= balance
+    parseFloat(sendAmount) > 0 &&
+    parseFloat(sendAmount) + estimatedFee <= walletInfo.balance
 
   const handleSend = async () => {
+    if (!walletInfo || !canSend) return
+
+    // For demo purposes, we need a private key. In real implementation, 
+    // this would come from secure storage or user input
+    const privateKeyPrompt = prompt("Enter your private key to sign the transaction:")
+    if (!privateKeyPrompt) return
+
     setIsLoading(true)
-    // Simulate transaction processing
-    setTimeout(() => {
-      setIsLoading(false)
-      setShowConfirmation(true)
-      // Add new transaction to history
-      const newTransaction: Transaction = {
-        id: Date.now().toString(),
-        hash: "0x" + Math.random().toString(16).substr(2, 64),
-        type: "send",
-        amount: Number.parseFloat(sendAmount),
-        from: walletAddress,
-        to: recipient,
-        timestamp: new Date(),
-        status: "pending",
-        blockNumber: 0,
-        gasUsed: 0,
-        gasPrice: Number.parseFloat(gasPrice),
+    setSendError("")
+
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: walletInfo.address,
+          to: recipient,
+          amount: parseFloat(sendAmount),
+          privateKey: privateKeyPrompt,
+          gasPrice: parseFloat(gasPrice)
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setShowConfirmation(true)
+        setRecipient("")
+        setSendAmount("")
+        
+        // Refresh wallet data
+        await loadWalletData()
+
+        setTimeout(() => {
+          setShowConfirmation(false)
+        }, 3000)
+      } else {
+        setSendError(data.error || 'Failed to send transaction')
       }
-
-      // Update balance
-      setBalance((prev) => prev - Number.parseFloat(sendAmount) - estimatedFee)
-      setUsdValue((prev) => prev - (Number.parseFloat(sendAmount) + estimatedFee) * 2)
-
-      // Reset form
-      setRecipient("")
-      setSendAmount("")
-
-      setTimeout(() => {
-        setShowConfirmation(false)
-      }, 3000)
-    }, 2000)
+    } catch (error) {
+      console.error('Error sending transaction:', error)
+      setSendError('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const filteredTransactions = transactions.filter((tx) => {
+  const getTransactionType = (tx: Transaction, walletAddress: string) => {
+    return tx.to === walletAddress ? 'receive' : 'send'
+  }
+
+  const filteredTransactions = allTransactions.filter((tx) => {
+    if (!walletInfo) return false
+    
     const matchesSearch =
-      tx.hash.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tx.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.to.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesFilter = selectedFilter === "all" || tx.type === selectedFilter || tx.status === selectedFilter
+    const txType = getTransactionType(tx, walletInfo.address)
+    const matchesFilter = selectedFilter === "all" || 
+                         txType === selectedFilter || 
+                         tx.status === selectedFilter
 
     return matchesSearch && matchesFilter
   })
 
+  if (loading || !walletInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500 flex items-center justify-center">
+        <Card className="bg-white/95 backdrop-blur-sm p-8">
+          <CardContent className="flex items-center space-x-4">
+            <Loader className="w-8 h-8 animate-spin" />
+            <span className="text-lg">Loading wallet...</span>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Calculate statistics
-  const totalReceived = transactions
-    .filter((tx) => tx.type === "receive" && tx.status === "confirmed")
-    .reduce((sum, tx) => sum + tx.amount, 0)
-  const totalSent = transactions
-    .filter((tx) => tx.type === "send" && tx.status === "confirmed")
-    .reduce((sum, tx) => sum + tx.amount, 0)
-  const pendingTransactions = transactions.filter((tx) => tx.status === "pending").length
+  const totalReceived = walletInfo.transactions.totalReceived
+  const totalSent = walletInfo.transactions.totalSent
+  const pendingTransactions = allTransactions.filter((tx) => tx.status === "pending").length
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500">
@@ -229,14 +276,22 @@ export default function WalletPage() {
               </Button>
               <div className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-2">
                 <Wallet className="w-4 h-4 text-white" />
-                <span className="font-mono text-sm text-white">{formatAddress(walletAddress)}</span>
+                <span className="font-mono text-sm text-white">{formatAddress(walletInfo.address)}</span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(walletAddress)}
+                  onClick={() => copyToClipboard(walletInfo.address)}
                   className="h-6 w-6 p-0 text-white hover:bg-white/10"
                 >
                   <Copy className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshData}
+                  className="h-6 w-6 p-0 text-white hover:bg-white/10"
+                >
+                  <RefreshCw className="w-3 h-3" />
                 </Button>
               </div>
             </div>
@@ -281,7 +336,7 @@ export default function WalletPage() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{showBalance ? `${balance.toLocaleString()} MYC` : "••••••"}</div>
+                  <div className="text-2xl font-bold">{showBalance ? `${walletInfo.balance.toLocaleString()} MYC` : "••••••"}</div>
                   <p className="text-xs text-muted-foreground">
                     {showBalance ? `≈ $${usdValue.toLocaleString()} USD` : "••••••"}
                   </p>
@@ -365,36 +420,39 @@ export default function WalletPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {transactions.slice(0, 3).map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            tx.type === "receive" ? "bg-green-100" : "bg-red-100"
-                          }`}
-                        >
-                          {tx.type === "receive" ? (
-                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <ArrowUpRight className="w-4 h-4 text-red-600" />
-                          )}
+                  {walletInfo.transactions.recent.slice(0, 3).map((tx) => {
+                    const txType = getTransactionType(tx, walletInfo.address)
+                    return (
+                      <div key={tx.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              txType === "receive" ? "bg-green-100" : "bg-red-100"
+                            }`}
+                          >
+                            {txType === "receive" ? (
+                              <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <ArrowUpRight className="w-4 h-4 text-red-600" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{txType === "receive" ? "Received" : "Sent"}</div>
+                            <div className="text-xs text-gray-500">{formatDate(tx.timestamp)}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-sm">{tx.type === "receive" ? "Received" : "Sent"}</div>
-                          <div className="text-xs text-gray-500">{formatDate(tx.timestamp)}</div>
+                        <div className="text-right">
+                          <div className={`font-medium ${txType === "receive" ? "text-green-600" : "text-red-600"}`}>
+                            {txType === "receive" ? "+" : "-"}
+                            {tx.amount} MYC
+                          </div>
+                          <Badge variant={tx.status === "confirmed" ? "default" : "secondary"} className="text-xs">
+                            {tx.status}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`font-medium ${tx.type === "receive" ? "text-green-600" : "text-red-600"}`}>
-                          {tx.type === "receive" ? "+" : "-"}
-                          {tx.amount} MYC
-                        </div>
-                        <Badge variant={tx.status === "confirmed" ? "default" : "secondary"} className="text-xs">
-                          {tx.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -413,7 +471,7 @@ export default function WalletPage() {
                 {/* Balance Display */}
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="text-sm text-gray-600">Available Balance</div>
-                  <div className="text-2xl font-bold text-gray-900">{balance} MYC</div>
+                  <div className="text-2xl font-bold text-gray-900">{walletInfo.balance} MYC</div>
                   <div className="text-sm text-gray-500">≈ ${usdValue.toLocaleString()} USD</div>
                 </div>
 
@@ -442,9 +500,9 @@ export default function WalletPage() {
                       onChange={(e) => setSendAmount(e.target.value)}
                       placeholder="0.00"
                       step="0.000001"
-                      max={balance}
+                      max={walletInfo.balance}
                     />
-                    {sendAmount && Number.parseFloat(sendAmount) > balance && (
+                    {sendAmount && parseFloat(sendAmount) > walletInfo.balance && (
                       <p className="text-sm text-red-600 mt-1">Insufficient balance</p>
                     )}
                   </div>
@@ -477,11 +535,17 @@ export default function WalletPage() {
                       <div className="flex justify-between border-t pt-1">
                         <span className="text-gray-600">Total:</span>
                         <span className="font-medium">
-                          {(Number.parseFloat(sendAmount) + estimatedFee).toFixed(6)} MYC
+                          {(parseFloat(sendAmount) + estimatedFee).toFixed(6)} MYC
                         </span>
                       </div>
                     </div>
                   </div>
+                )}
+
+                {sendError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{sendError}</AlertDescription>
+                  </Alert>
                 )}
 
                 <Alert>
@@ -492,7 +556,14 @@ export default function WalletPage() {
                 </Alert>
 
                 <Button onClick={handleSend} disabled={!canSend || isLoading} className="w-full">
-                  {isLoading ? "Sending..." : "Send Transaction"}
+                  {isLoading ? (
+                    <>
+                      <Loader className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Transaction"
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -543,75 +614,78 @@ export default function WalletPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredTransactions.map((tx) => (
-                    <div key={tx.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-4">
-                          <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              tx.type === "receive" ? "bg-green-100" : "bg-red-100"
-                            }`}
-                          >
-                            {tx.type === "receive" ? (
-                              <ArrowDownLeft className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <ArrowUpRight className="w-5 h-5 text-red-600" />
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium">{tx.type === "receive" ? "Received" : "Sent"}</span>
-                              <Badge
-                                variant={
-                                  tx.status === "confirmed"
-                                    ? "default"
-                                    : tx.status === "pending"
-                                      ? "secondary"
-                                      : "destructive"
-                                }
-                              >
-                                {tx.status}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-gray-600 space-y-1">
-                              <div>
-                                Hash:
-                                <span className="font-mono ml-1">{formatHash(tx.hash)}</span>
-                                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1">
-                                  <ExternalLink className="w-3 h-3" />
-                                </Button>
-                              </div>
-                              <div>
-                                From: <span className="font-mono">{formatAddress(tx.from)}</span>
-                              </div>
-                              <div>
-                                To: <span className="font-mono">{formatAddress(tx.to)}</span>
-                              </div>
-                              {tx.blockNumber > 0 && (
-                                <div>
-                                  Block: <span className="font-mono">{tx.blockNumber.toLocaleString()}</span>
-                                </div>
+                  {filteredTransactions.map((tx) => {
+                    const txType = getTransactionType(tx, walletInfo.address)
+                    return (
+                      <div key={tx.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4">
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                txType === "receive" ? "bg-green-100" : "bg-red-100"
+                              }`}
+                            >
+                              {txType === "receive" ? (
+                                <ArrowDownLeft className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <ArrowUpRight className="w-5 h-5 text-red-600" />
                               )}
                             </div>
-                            <div className="text-xs text-gray-500">{formatDate(tx.timestamp)}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div
-                            className={`text-lg font-medium ${tx.type === "receive" ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {tx.type === "receive" ? "+" : "-"}
-                            {tx.amount} MYC
-                          </div>
-                          {tx.status === "confirmed" && (
-                            <div className="text-sm text-gray-600">
-                              Gas: {tx.gasUsed.toLocaleString()} @ {tx.gasPrice} Gwei
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium">{txType === "receive" ? "Received" : "Sent"}</span>
+                                <Badge
+                                  variant={
+                                    tx.status === "confirmed"
+                                      ? "default"
+                                      : tx.status === "pending"
+                                        ? "secondary"
+                                        : "destructive"
+                                  }
+                                >
+                                  {tx.status}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-600 space-y-1">
+                                <div>
+                                  ID:
+                                  <span className="font-mono ml-1">{formatHash(tx.id)}</span>
+                                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0 ml-1">
+                                    <ExternalLink className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                                <div>
+                                  From: <span className="font-mono">{formatAddress(tx.from)}</span>
+                                </div>
+                                <div>
+                                  To: <span className="font-mono">{formatAddress(tx.to)}</span>
+                                </div>
+                                {tx.blockNumber && tx.blockNumber > 0 && (
+                                  <div>
+                                    Block: <span className="font-mono">{tx.blockNumber.toLocaleString()}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">{formatDate(tx.timestamp)}</div>
                             </div>
-                          )}
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className={`text-lg font-medium ${txType === "receive" ? "text-green-600" : "text-red-600"}`}
+                            >
+                              {txType === "receive" ? "+" : "-"}
+                              {tx.amount} MYC
+                            </div>
+                            {tx.status === "confirmed" && (
+                              <div className="text-sm text-gray-600">
+                                Gas: {tx.gasUsed.toLocaleString()} @ {tx.gasPrice} Gwei
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 {filteredTransactions.length === 0 && (

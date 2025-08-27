@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Copy, Eye, EyeOff, Download, ArrowLeft, Shield, Key, FileText } from "lucide-react"
+import { Copy, Eye, EyeOff, Download, ArrowLeft, Shield, Key, FileText, Loader } from "lucide-react"
 import Link from "next/link"
 
 export default function CreateWalletPage() {
@@ -19,21 +19,72 @@ export default function CreateWalletPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [passphrase, setPassphrase] = useState("")
   const [walletData, setWalletData] = useState({
     address: "",
     privateKey: "",
-    mnemonic: "",
+    publicKey: "",
+    balance: 0,
+    created: "",
   })
 
-  const generateWallet = () => {
-    // Simulate wallet generation
-    const mockWallet = {
-      address: "0x" + Math.random().toString(16).substr(2, 40),
-      privateKey: "0x" + Math.random().toString(16).substr(2, 64),
-      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+  const generatePassphrase = async () => {
+    try {
+      const response = await fetch('/api/utils/passphrase')
+      const data = await response.json()
+      if (data.success) {
+        setPassphrase(data.data.passphrase)
+      }
+    } catch (error) {
+      console.error('Error generating passphrase:', error)
     }
-    setWalletData(mockWallet)
-    setStep(2)
+  }
+
+  const generateWallet = async () => {
+    if (!password || password !== confirmPassword || !agreedToTerms) {
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          passphrase: passphrase || undefined
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setWalletData({
+          address: data.data.address,
+          privateKey: data.data.privateKey, // Store the private key to display to user
+          publicKey: data.data.publicKey,
+          balance: data.data.balance,
+          created: data.data.created,
+        })
+        
+        // Store wallet address in localStorage for later access
+        localStorage.setItem('currentWalletAddress', data.data.address)
+        
+        setStep(2)
+      } else {
+        setError(data.error || 'Failed to create wallet')
+      }
+    } catch (error) {
+      console.error('Error creating wallet:', error)
+      setError('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const copyToClipboard = (text: string) => {
@@ -43,9 +94,11 @@ export default function CreateWalletPage() {
   const downloadWallet = () => {
     const walletInfo = {
       address: walletData.address,
-      privateKey: walletData.privateKey,
-      mnemonic: walletData.mnemonic,
-      createdAt: new Date().toISOString(),
+      publicKey: walletData.publicKey,
+      privateKey: walletData.privateKey, // Include private key in download
+      passphrase: passphrase,
+      createdAt: walletData.created,
+      note: "⚠️ IMPORTANT: Keep your private key secure. Never share it with anyone. You need this to access your wallet."
     }
 
     const dataStr = JSON.stringify(walletInfo, null, 2)
@@ -125,6 +178,26 @@ export default function CreateWalletPage() {
                     />
                   </div>
 
+                  <div>
+                    <Label className="flex items-center justify-between mb-2">
+                      <span>Passphrase (Optional)</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={generatePassphrase}
+                      >
+                        Generate
+                      </Button>
+                    </Label>
+                    <Textarea
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder="Enter or generate a passphrase for additional security"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="terms"
@@ -137,6 +210,12 @@ export default function CreateWalletPage() {
                   </div>
                 </div>
 
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
                 <Alert>
                   <Shield className="h-4 w-4" />
                   <AlertDescription>
@@ -146,10 +225,17 @@ export default function CreateWalletPage() {
 
                 <Button
                   onClick={generateWallet}
-                  disabled={!password || password !== confirmPassword || !agreedToTerms}
+                  disabled={!password || password !== confirmPassword || !agreedToTerms || isLoading}
                   className="w-full"
                 >
-                  Create Wallet
+                  {isLoading ? (
+                    <>
+                      <Loader className="w-4 h-4 mr-2 animate-spin" />
+                      Creating Wallet...
+                    </>
+                  ) : (
+                    'Create Wallet'
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -164,11 +250,11 @@ export default function CreateWalletPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Alert>
-                  <Shield className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Important:</strong> Save your private key and mnemonic phrase in a secure location. Anyone
-                    with access to these can control your wallet.
+                <Alert className="border-red-200 bg-red-50">
+                  <Shield className="h-4 w-4 text-red-500" />
+                  <AlertDescription className="text-red-700">
+                    <strong>Critical:</strong> Save your private key securely! Without it, you cannot access your wallet or recover your funds. 
+                    Anyone with your private key can control your wallet. Download the wallet file or copy the private key to a secure location.
                   </AlertDescription>
                 </Alert>
 
@@ -189,11 +275,11 @@ export default function CreateWalletPage() {
                   <div>
                     <Label className="flex items-center space-x-2 mb-2">
                       <Shield className="w-4 h-4" />
-                      <span>Private Key</span>
+                      <span>Public Key</span>
                     </Label>
                     <div className="flex space-x-2">
-                      <Input value={walletData.privateKey} readOnly className="font-mono text-sm" />
-                      <Button variant="outline" size="sm" onClick={() => copyToClipboard(walletData.privateKey)}>
+                      <Textarea value={walletData.publicKey} readOnly className="font-mono text-sm min-h-[100px]" />
+                      <Button variant="outline" size="sm" onClick={() => copyToClipboard(walletData.publicKey)}>
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
@@ -201,14 +287,40 @@ export default function CreateWalletPage() {
 
                   <div>
                     <Label className="flex items-center space-x-2 mb-2">
-                      <FileText className="w-4 h-4" />
-                      <span>Mnemonic Phrase</span>
+                      <Key className="w-4 h-4 text-red-500" />
+                      <span className="text-red-600 font-semibold">Private Key (Keep Secret!)</span>
                     </Label>
                     <div className="flex space-x-2">
-                      <Textarea value={walletData.mnemonic} readOnly className="font-mono text-sm" />
-                      <Button variant="outline" size="sm" onClick={() => copyToClipboard(walletData.mnemonic)}>
+                      <Textarea value={walletData.privateKey} readOnly className="font-mono text-sm min-h-[100px] border-red-200 bg-red-50" />
+                      <Button variant="outline" size="sm" onClick={() => copyToClipboard(walletData.privateKey)} className="border-red-200">
                         <Copy className="w-4 h-4" />
                       </Button>
+                    </div>
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠️ Never share your private key with anyone. You need this to access your wallet.
+                    </p>
+                  </div>
+
+                  {passphrase && (
+                    <div>
+                      <Label className="flex items-center space-x-2 mb-2">
+                        <FileText className="w-4 h-4" />
+                        <span>Passphrase</span>
+                      </Label>
+                      <div className="flex space-x-2">
+                        <Textarea value={passphrase} readOnly className="font-mono text-sm" />
+                        <Button variant="outline" size="sm" onClick={() => copyToClipboard(passphrase)}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Wallet Information</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p><strong>Balance:</strong> {walletData.balance} MyCoin</p>
+                      <p><strong>Created:</strong> {new Date(walletData.created).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>

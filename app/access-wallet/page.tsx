@@ -11,41 +11,100 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Key, FileText, Upload } from "lucide-react"
+import { ArrowLeft, Key, FileText, Upload, Loader } from "lucide-react"
 import Link from "next/link"
 
 export default function AccessWalletPage() {
   const router = useRouter()
   const [privateKey, setPrivateKey] = useState("")
-  const [mnemonic, setMnemonic] = useState("")
+  const [passphrase, setPassphrase] = useState("")
   const [walletFile, setWalletFile] = useState<File | null>(null)
   const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const handlePrivateKeyAccess = () => {
-    if (privateKey.length === 66 && privateKey.startsWith("0x")) {
-      // Simulate successful access
-      router.push("/wallet")
+  const handlePrivateKeyAccess = async () => {
+    if (!privateKey.trim()) {
+      setError("Please enter your private key")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch('/api/wallet', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          privateKey: privateKey.trim(),
+          passphrase: passphrase.trim() || undefined
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Store wallet address in localStorage
+        localStorage.setItem('currentWalletAddress', data.data.address)
+        router.push("/wallet")
+      } else {
+        setError(data.error || 'Failed to access wallet')
+      }
+    } catch (error) {
+      console.error('Error accessing wallet:', error)
+      setError('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleMnemonicAccess = () => {
-    if (mnemonic.trim().split(" ").length === 12) {
-      // Simulate successful access
-      router.push("/wallet")
-    }
+    setError("Mnemonic phrase access is not yet implemented. Please use private key access.")
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       setWalletFile(file)
+      setError("")
     }
   }
 
-  const handleFileAccess = () => {
-    if (walletFile && password) {
-      // Simulate successful access
-      router.push("/wallet")
+  const handleFileAccess = async () => {
+    if (!walletFile) {
+      setError("Please select a wallet file")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const fileContent = await walletFile.text()
+      const walletData = JSON.parse(fileContent)
+
+      if (walletData.address) {
+        // Check if wallet exists in our system
+        const response = await fetch(`/api/wallet/${walletData.address}`)
+        const data = await response.json()
+
+        if (data.success) {
+          localStorage.setItem('currentWalletAddress', walletData.address)
+          router.push("/wallet")
+        } else {
+          setError('Wallet not found in the system')
+        }
+      } else {
+        setError('Invalid wallet file format')
+      }
+    } catch (error) {
+      console.error('Error reading wallet file:', error)
+      setError('Invalid wallet file or network error')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -92,22 +151,47 @@ export default function AccessWalletPage() {
                       <Key className="w-4 h-4" />
                       <span>Private Key</span>
                     </Label>
-                    <Input
+                    <Textarea
                       id="privateKey"
-                      type="password"
                       value={privateKey}
                       onChange={(e) => setPrivateKey(e.target.value)}
-                      placeholder="Enter your private key (0x...)"
-                      className="font-mono"
+                      placeholder="Enter your private key"
+                      className="font-mono min-h-[100px]"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="passphrase">Passphrase (Optional)</Label>
+                    <Input
+                      id="passphrase"
+                      type="password"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder="Enter passphrase if used during wallet creation"
+                    />
+                  </div>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
                   <Alert>
                     <AlertDescription>
-                      Your private key should start with "0x" and be 66 characters long.
+                      Enter your private key to access your wallet. Never share your private key with anyone.
                     </AlertDescription>
                   </Alert>
-                  <Button onClick={handlePrivateKeyAccess} disabled={!privateKey} className="w-full">
-                    Access Wallet
+                  <Button 
+                    onClick={handlePrivateKeyAccess} 
+                    disabled={!privateKey || isLoading} 
+                    className="w-full"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 mr-2 animate-spin" />
+                        Accessing Wallet...
+                      </>
+                    ) : (
+                      'Access Wallet'
+                    )}
                   </Button>
                 </TabsContent>
 
@@ -115,21 +199,28 @@ export default function AccessWalletPage() {
                   <div>
                     <Label htmlFor="mnemonic" className="flex items-center space-x-2 mb-2">
                       <FileText className="w-4 h-4" />
-                      <span>Mnemonic Phrase</span>
+                      <span>Passphrase</span>
                     </Label>
                     <Textarea
-                      id="mnemonic"
-                      value={mnemonic}
-                      onChange={(e) => setMnemonic(e.target.value)}
-                      placeholder="Enter your 12-word mnemonic phrase"
+                      id="passphrase-input"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      placeholder="Enter your passphrase"
                       className="font-mono"
                       rows={3}
                     />
                   </div>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
                   <Alert>
-                    <AlertDescription>Enter your 12-word mnemonic phrase separated by spaces.</AlertDescription>
+                    <AlertDescription>
+                      Enter your passphrase to access your wallet. This feature is currently limited.
+                    </AlertDescription>
                   </Alert>
-                  <Button onClick={handleMnemonicAccess} disabled={!mnemonic} className="w-full">
+                  <Button onClick={handleMnemonicAccess} disabled={!passphrase} className="w-full">
                     Access Wallet
                   </Button>
                 </TabsContent>

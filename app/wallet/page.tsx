@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -27,7 +27,8 @@ import {
   EyeOff,
   Activity,
   Loader,
-  RefreshCw
+  RefreshCw,
+  Coins
 } from "lucide-react"
 
 interface Transaction {
@@ -59,12 +60,31 @@ interface WalletInfo {
   }
 }
 
+interface PortfolioStats {
+  totalValue: number
+  totalReceived: number
+  totalSent: number
+  totalFees: number
+  transactionCount: number
+  avgTransactionValue: number
+  profit: number
+  profitPercentage: number
+  monthlyChange: number
+  monthlyChangePercentage: number
+  recentActivity: {
+    last24h: number
+    last7d: number
+    last30d: number
+  }
+}
+
 export default function WalletPage() {
   const router = useRouter()
   const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [showBalance, setShowBalance] = useState(true)
   const [usdValue, setUsdValue] = useState(0)
+  const [portfolioStats, setPortfolioStats] = useState<PortfolioStats | null>(null)
 
   // Send functionality states
   const [recipient, setRecipient] = useState("")
@@ -80,8 +100,25 @@ export default function WalletPage() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([])
   const [transactionsLoading, setTransactionsLoading] = useState(false)
 
+  // Deposit functionality states
+  const [depositAmount, setDepositAmount] = useState("")
+  const [isDepositing, setIsDepositing] = useState(false)
+  const [depositError, setDepositError] = useState("")
+  const [depositSuccess, setDepositSuccess] = useState("")
+
   useEffect(() => {
     loadWalletData()
+    
+    // Set up polling for real-time updates every 2 seconds
+    const interval = setInterval(() => {
+      const walletAddress = localStorage.getItem('currentWalletAddress')
+      if (walletAddress) {
+        loadTransactions(walletAddress)
+        loadPortfolioStats(walletAddress)
+      }
+    }, 2000)
+
+    return () => clearInterval(interval)
   }, [])
 
   const loadWalletData = async () => {
@@ -105,8 +142,11 @@ export default function WalletPage() {
         setWalletInfo(data.data)
         setUsdValue(data.data.balance * 2) // Mock USD conversion rate
         
-        // Load all transactions
-        await loadTransactions(walletAddress)
+        // Load all transactions and portfolio stats
+        await Promise.all([
+          loadTransactions(walletAddress),
+          loadPortfolioStats(walletAddress)
+        ])
       } else {
         console.error('Failed to load wallet:', data.error)
         router.push('/')
@@ -116,6 +156,19 @@ export default function WalletPage() {
       router.push('/')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPortfolioStats = async (address: string) => {
+    try {
+      const response = await fetch(`/api/portfolio/${address}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setPortfolioStats(data.data.portfolio)
+      }
+    } catch (error) {
+      console.error('Error loading portfolio stats:', error)
     }
   }
 
@@ -207,7 +260,7 @@ export default function WalletPage() {
 
         setTimeout(() => {
           setShowConfirmation(false)
-        }, 3000)
+        }, 8000) // Show for 8 seconds to give time for user to see confirmation
       } else {
         setSendError(data.error || 'Failed to send transaction')
       }
@@ -216,6 +269,54 @@ export default function WalletPage() {
       setSendError('Network error. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleDeposit = async () => {
+    if (!walletInfo || !depositAmount) return
+
+    const amount = parseFloat(depositAmount)
+    if (amount <= 0 || amount > 10000) {
+      setDepositError("Amount must be between 1 and 10,000 MYC")
+      return
+    }
+
+    setIsDepositing(true)
+    setDepositError("")
+    setDepositSuccess("")
+
+    try {
+      const response = await fetch('/api/wallet/deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: walletInfo.address,
+          amount: amount
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setDepositSuccess(`Successfully deposited ${amount} MYC to your wallet!`)
+        setDepositAmount("")
+        
+        // Refresh wallet data
+        await loadWalletData()
+
+        setTimeout(() => {
+          setDepositSuccess("")
+        }, 5000)
+      } else {
+        setDepositError(data.error || 'Failed to deposit money')
+      }
+    } catch (error) {
+      console.error('Error depositing money:', error)
+      setDepositError('Network error. Please try again.')
+    } finally {
+      setIsDepositing(false)
     }
   }
 
@@ -306,7 +407,10 @@ export default function WalletPage() {
             <Card className="bg-green-50 border-green-200">
               <CardContent className="flex items-center space-x-2 p-4">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-green-700 font-medium">Transaction sent successfully!</span>
+                <div>
+                  <div className="text-green-700 font-medium">Transaction submitted!</div>
+                  <div className="text-green-600 text-sm">Will be confirmed in 5 seconds</div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -377,6 +481,89 @@ export default function WalletPage() {
               </Card>
             </div>
 
+            {/* Quick Actions - Deposit Money */}
+            <Card className="bg-white/95 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Coins className="w-5 h-5" />
+                  <span>Quick Deposit</span>
+                </CardTitle>
+                <CardDescription>Add fake money to your wallet for testing</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <Label htmlFor="depositAmount">Amount (MYC)</Label>
+                    <Input
+                      id="depositAmount"
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="Enter amount (1-10,000)"
+                      min="1"
+                      max="10000"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={handleDeposit} 
+                      disabled={!depositAmount || isDepositing || parseFloat(depositAmount) <= 0}
+                      className="whitespace-nowrap"
+                    >
+                      {isDepositing ? (
+                        <>
+                          <Loader className="w-4 h-4 mr-2 animate-spin" />
+                          Depositing...
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="w-4 h-4 mr-2" />
+                          Deposit
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {depositError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{depositError}</AlertDescription>
+                  </Alert>
+                )}
+
+                {depositSuccess && (
+                  <Alert className="bg-green-50 border-green-200">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <AlertDescription className="text-green-700">{depositSuccess}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setDepositAmount("100")}
+                  >
+                    +100 MYC
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setDepositAmount("500")}
+                  >
+                    +500 MYC
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setDepositAmount("1000")}
+                  >
+                    +1,000 MYC
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Portfolio Performance */}
             <Card className="bg-white/95 backdrop-blur-sm">
               <CardHeader>
@@ -386,22 +573,136 @@ export default function WalletPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">+5.2%</div>
-                    <p className="text-sm text-gray-600">24h Change</p>
+                {portfolioStats ? (
+                  <div className="space-y-6">
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <div className={`text-2xl font-bold ${portfolioStats.recentActivity.last24h > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                          {portfolioStats.recentActivity.last24h}
+                        </div>
+                        <p className="text-sm text-gray-600">24h Transactions</p>
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-2xl font-bold ${portfolioStats.recentActivity.last7d > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                          {portfolioStats.recentActivity.last7d}
+                        </div>
+                        <p className="text-sm text-gray-600">7d Transactions</p>
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-2xl font-bold ${portfolioStats.recentActivity.last30d > 0 ? 'text-purple-600' : 'text-gray-600'}`}>
+                          {portfolioStats.recentActivity.last30d}
+                        </div>
+                        <p className="text-sm text-gray-600">30d Transactions</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Profit/Loss:</span>
+                          <span className={`font-medium ${portfolioStats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {portfolioStats.profit >= 0 ? '+' : ''}{portfolioStats.profit.toFixed(2)} MYC
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Profit %:</span>
+                          <span className={`font-medium ${portfolioStats.profitPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {portfolioStats.profitPercentage >= 0 ? '+' : ''}{portfolioStats.profitPercentage.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Total Fees Paid:</span>
+                          <span className="font-medium text-orange-600">
+                            {portfolioStats.totalFees.toFixed(4)} MYC
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Monthly Change:</span>
+                          <span className={`font-medium ${portfolioStats.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {portfolioStats.monthlyChange >= 0 ? '+' : ''}{portfolioStats.monthlyChange.toFixed(2)} MYC
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Monthly %:</span>
+                          <span className={`font-medium ${portfolioStats.monthlyChangePercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {portfolioStats.monthlyChangePercentage >= 0 ? '+' : ''}{portfolioStats.monthlyChangePercentage.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Avg Transaction:</span>
+                          <span className="font-medium text-blue-600">
+                            {portfolioStats.avgTransactionValue.toFixed(2)} MYC
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">+12.8%</div>
-                    <p className="text-sm text-gray-600">7d Change</p>
+                ) : (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader className="w-6 h-6 animate-spin mr-2" />
+                    <span>Loading portfolio stats...</span>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">+45.3%</div>
-                    <p className="text-sm text-gray-600">30d Change</p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* Pending Transactions */}
+            {pendingTransactions > 0 && (
+              <Card className="bg-orange-50/95 backdrop-blur-sm border-orange-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-orange-800">
+                    <Activity className="w-5 h-5" />
+                    <span>Pending Transactions</span>
+                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                      {pendingTransactions}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-orange-700">
+                    These transactions will be automatically confirmed in 5 seconds after creation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {allTransactions
+                      .filter((tx) => tx.status === "pending")
+                      .slice(0, 5)
+                      .map((tx) => {
+                        const txType = getTransactionType(tx, walletInfo.address)
+                        const timeElapsed = Math.floor((Date.now() - new Date(tx.timestamp).getTime()) / 1000)
+                        const timeRemaining = Math.max(0, 5 - timeElapsed)
+                        
+                        return (
+                          <div key={tx.id} className="flex items-center justify-between p-3 bg-white/60 border border-orange-200 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                                <Loader className="w-4 h-4 text-orange-600 animate-spin" />
+                              </div>
+                              <div>
+                                <div className="font-medium text-sm text-orange-800">
+                                  {txType === "receive" ? "Receiving" : "Sending"} {tx.amount} MYC
+                                </div>
+                                <div className="text-xs text-orange-600">
+                                  {txType === "receive" ? `From: ${formatAddress(tx.from)}` : `To: ${formatAddress(tx.to)}`}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium text-orange-800">
+                                {timeRemaining > 0 ? `${timeRemaining}s remaining` : 'Confirming...'}
+                              </div>
+                              <div className="text-xs text-orange-600">
+                                ID: {formatHash(tx.id)}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Recent Transactions */}
             <Card className="bg-white/95 backdrop-blur-sm">
@@ -411,7 +712,7 @@ export default function WalletPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => document.querySelector('[value="history"]')?.click()}
+                    onClick={() => (document.querySelector('[value="history"]') as HTMLElement)?.click()}
                   >
                     View All
                     <ExternalLink className="w-4 h-4 ml-2" />

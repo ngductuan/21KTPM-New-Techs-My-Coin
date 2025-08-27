@@ -40,11 +40,11 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Access my wallet</h1>
-          <p className="text-white/80 text-lg mb-2">Please select a method to access your wallet.</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Access Your Wallet</h1>
+          <p className="text-white/80 text-lg mb-2">Choose your preferred method to access your MyCoin wallet.</p>
           <p className="text-white/80">
             {"Don't have a wallet? "}
-            <Link href="/create-wallet" className="text-emerald-400 hover:text-emerald-300 underline">
+            <Link href="/create-wallet" className="text-emerald-600 hover:text-emerald-400 underline">
               Create Wallet
             </Link>
           </p>
@@ -62,7 +62,7 @@ export default function HomePage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Private Key</h3>
-                      <p className="text-gray-600 text-sm">Access with your private key</p>
+                      <p className="text-gray-600 text-sm">Import wallet using your private key</p>
                     </div>
                   </div>
                   <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-medium">Official</div>
@@ -82,8 +82,8 @@ export default function HomePage() {
                       <Shield className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">MyCoin wallet app</h3>
-                      <p className="text-gray-600 text-sm">Connect MyCoin Wallet app to MyCoin web</p>
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Passphrase</h3>
+                      <p className="text-gray-600 text-sm">Access wallet using your 12-word passphrase</p>
                     </div>
                   </div>
                   <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-medium">Official</div>
@@ -102,26 +102,8 @@ export default function HomePage() {
                     <Globe className="w-6 h-6 text-orange-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Browser extension</h3>
-                    <p className="text-gray-600 text-sm">Use your Web3 wallet with MyCoin</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <div className="py-1"></div>
-
-          <Link href="/access-wallet">
-            <Card className="bg-white/95 backdrop-blur-sm hover:bg-white transition-all duration-200 cursor-pointer group">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Smartphone className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Mobile Apps</h3>
-                    <p className="text-gray-600 text-sm">WalletConnect, WalletLink</p>
+                    <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">Wallet File</h3>
+                    <p className="text-gray-600 text-sm">Upload your downloaded wallet file (.json)</p>
                   </div>
                 </div>
               </CardContent>

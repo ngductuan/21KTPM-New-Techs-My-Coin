@@ -124,6 +124,47 @@ export class CryptoUtils {
     return { ...block, nonce, hash };
   }
 
+  // Proof of Work for transaction validation
+  static performProofOfWork(transaction: Transaction, difficulty: number): { 
+    isValid: boolean; 
+    hash: string; 
+    iterations: number; 
+  } {
+    let nonce = 0;
+    let hash = '';
+    const target = '0'.repeat(difficulty);
+    const maxIterations = 1000000; // Limit iterations to prevent infinite loops
+    
+    const transactionString = JSON.stringify({
+      id: transaction.id,
+      from: transaction.from,
+      to: transaction.to,
+      amount: transaction.amount,
+      timestamp: transaction.timestamp,
+      nonce
+    });
+    
+    while (nonce < maxIterations) {
+      const dataWithNonce = transactionString + nonce;
+      hash = crypto.createHash('sha256').update(dataWithNonce).digest('hex');
+      
+      if (hash.startsWith(target)) {
+        return {
+          isValid: true,
+          hash,
+          iterations: nonce
+        };
+      }
+      nonce++;
+    }
+    
+    return {
+      isValid: false,
+      hash: '',
+      iterations: nonce
+    };
+  }
+
   // Generate random passphrase
   static generatePassphrase(): string {
     const words = [

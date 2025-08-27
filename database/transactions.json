@@ -1,5 +1,59 @@
 {
-  "transactions": [],
+  "transactions": [
+    {
+      "id": "245c5930-9b44-4526-b5ba-03d2060fb590",
+      "from": "0x0000000000000000000000000000000000000000",
+      "to": "0x79d42b736a7b814a56880c23226c615575647ab5",
+      "amount": 100,
+      "timestamp": "2025-08-27T15:22:15.559Z",
+      "signature": "SYSTEM_DEPOSIT",
+      "status": "confirmed",
+      "blockHash": "DEPOSIT_BLOCK",
+      "blockNumber": 0,
+      "gasUsed": 0,
+      "gasPrice": 0,
+      "fee": 0
+    },
+    {
+      "id": "87c53c8f-854d-433d-b7c2-166214f86f3b",
+      "from": "0x79d42b736a7b814a56880c23226c615575647ab5",
+      "to": "0xb01b3bcc624a35cdeed78666680c4a1e022f4d05",
+      "amount": 10,
+      "timestamp": "2025-08-27T15:46:50.468Z",
+      "signature": "0eda7e0b30f1a1a5bdfa775cfafeacc1d1617b9863e7e4fcb9c001792039bca07c552781794261177ab8c980c36412fe0d52f297b1d9bd1f382d08ab56f336146b77f2004ed0a6b8e0fd9c23806549284d112b281377ce3d88fea57e17327bd5184d88b82aaef0d216094d238dc7fdbfbafd17f0629195e065ce053461a5684294592896e2cc07a4c79bf10b97c0766ef62e79bf880f9ca6a68a2dca29d38a4544815463ba8acb4a3ddde1916d42e2060b6210a57c3af42de4bb28d3abca277a92fcb4bd4216e27b8b2b0edc8c52e4a6a3fdc6ca55775817cdc9ddf707e6cc513633aa0846ccfeb07364ae529abbb5502ddef48d10c2c949ea9c8ebee9443e65",
+      "status": "confirmed",
+      "gasUsed": 21000,
+      "gasPrice": 0.0001,
+      "fee": 2.1,
+      "blockHash": "000b2bd0437b72223e2d948bc5bbfba1eae43ec2408cd37780fff62eab6b1e5a"
+    },
+    {
+      "id": "80371515-b5e4-48eb-b199-7740595d9bd0",
+      "from": "0x79d42b736a7b814a56880c23226c615575647ab5",
+      "to": "0xb01b3bcc624a35cdeed78666680c4a1e022f4d05",
+      "amount": 5,
+      "timestamp": "2025-08-27T15:48:09.978Z",
+      "signature": "846263b1bbd8152ba7af85a0fb5b235cf653ec0a871d39a5e0bb85ff86064df835ad1d0c2b9c8cdbd51431dea3c1690560d3fa3bc06f736029a16b3592c40a560c21587c1302b5d86e79e222d63a62b7bca2e5b0642c16296c8e9124f8353e8a3a9d9ec85d3cef529b4d39c2280415a32ad2ac0cbac6da0424201b6c6391800b27e57fb72d15625807bc2ba8c339c3ce0d1338f81f7d14a2667deba0e76b12734c83ffa749fdc4b40b8f56f43af8e9f4cb946565d75acc59904cb06a06cc185da05dc8890dfa5ea25f92ed7d4f5cf56e3f853f19f78fc4e11ee51acd4419b237d0d6a9c934d13bc414a45208c6d0af56b5ca3c62ad79de7c6fc7903925dd84c3",
+      "status": "confirmed",
+      "gasUsed": 21000,
+      "gasPrice": 0.0001,
+      "fee": 2.1,
+      "blockHash": "000cc953b5daea6252d26bcf70cf0d501270b167325e47a6b6d91a39edc68e5a"
+    },
+    {
+      "id": "d6cc832c-dffd-4c22-a987-8e7b6792ebe2",
+      "from": "0x79d42b736a7b814a56880c23226c615575647ab5",
+      "to": "0xb01b3bcc624a35cdeed78666680c4a1e022f4d05",
+      "amount": 5,
+      "timestamp": "2025-08-27T15:48:49.821Z",
+      "signature": "12e6d68bd7343a56336ffc0da2fd07629ea370cc089243c6c13142171b62223077d71e0f128fdcd63e24089c7805f2a53c57f48a0daa73d0b4af5e8db93106f97faf2d02cd8e16486e514c297ed8cf54dbb4c29768a1a26e7eb6ead4732f0de1228b91d8363ac0a0b47a468481e85ffcb56d55ff65c6ec726aaf99c945d7c6cd11c0787933054b59d2c64137840670c4a61bcb2416bc696099a1f866c34d18469adbed708cce138fb994d99e9d7dfbe03837696b3629284062f48f314c4e45999abd0ebd221ccbb0a57002269ae2a1df27c6ebc93e42eb1a4c428a31e4da11bc7683ca65c75382749c273e06d670c80ea9916e9354ca32d911f16860edcd15fe",
+      "status": "confirmed",
+      "gasUsed": 21000,
+      "gasPrice": 0.0001,
+      "fee": 2.1,
+      "blockHash": "000ccca9bfb1a4283dd6b67a5f53a01ce197438740bc2f43c6ba4123cbbda55f"
+    }
+  ],
   "blocks": [],
   "difficulty": 4,
   "miningReward": 10,

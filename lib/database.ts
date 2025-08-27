@@ -65,9 +65,17 @@ export class DatabaseManager {
   // Get wallet by address
   static getWallet(address: string): Wallet | null {
     const db = this.readUsersDB();
-    // console.log(`Fetching wallet for db: ${JSON.stringify(db)}`);
-    // console.log("db.wallets[address]", db.wallets[address])
-    return db.wallets[address] || null;
+    const wallet = db.wallets[address];
+    
+    if (!wallet) {
+      return null;
+    }
+
+    // Return wallet with calculated balance (not stored balance)
+    return {
+      ...wallet,
+      balance: this.calculateBalance(address)
+    };
   }
 
   // Update wallet balance

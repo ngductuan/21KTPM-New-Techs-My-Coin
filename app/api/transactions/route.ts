@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CryptoUtils, Transaction } from '@/lib/crypto-utils';
 import { DatabaseManager } from '@/lib/database';
+import { TransactionProcessor } from '@/lib/transaction-processor';
 import { v4 as uuidv4 } from 'uuid';
 
 // Send transaction
@@ -96,8 +97,27 @@ export async function POST(request: NextRequest) {
     // Sign transaction
     transaction.signature = CryptoUtils.signTransaction(transaction, privateKey);
 
+    // Perform Proof of Work for transaction validation
+    console.log('Starting Proof of Work for transaction...');
+    const powResult = CryptoUtils.performProofOfWork(transaction, 3); // Difficulty 3 for transactions
+    
+    if (!powResult.isValid) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to complete Proof of Work validation' },
+        { status: 500 }
+      );
+    }
+
+    // Add PoW data to transaction
+    transaction.blockHash = powResult.hash;
+    console.log(`Transaction PoW completed in ${powResult.iterations} iterations`);
+
     // Add to pending transactions
     DatabaseManager.addPendingTransaction(transaction);
+
+    // Start processing the transaction - it will auto-confirm after 5 seconds
+    const processor = TransactionProcessor.getInstance();
+    await processor.processTransaction(transaction.id);
 
     return NextResponse.json({
       success: true,
@@ -108,7 +128,13 @@ export async function POST(request: NextRequest) {
         amount: transaction.amount,
         fee: transaction.fee,
         timestamp: transaction.timestamp,
-        status: transaction.status
+        status: transaction.status,
+        powWork: {
+          iterations: powResult.iterations,
+          hash: powResult.hash,
+          difficulty: 3
+        },
+        message: 'Transaction created and will be confirmed in 5 seconds'
       }
     });
   } catch (error) {

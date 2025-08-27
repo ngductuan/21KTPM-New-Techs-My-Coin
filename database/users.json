@@ -38,6 +38,14 @@
       "balance": 0,
       "created": "2025-08-27T14:55:44.370Z",
       "passphrase": "age acquire abandon air about accuse adapt advice able account alley aisle"
+    },
+    "0xb01b3bcc624a35cdeed78666680c4a1e022f4d05": {
+      "address": "0xb01b3bcc624a35cdeed78666680c4a1e022f4d05",
+      "privateKey": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCirqg4QI+VvcGO\nYI4rNxtAhxbPV5yIjzzBA+x1ASwKUfAfHMApJs6UpKl5szIFwpeh5x/w/xeJdgYT\nqOEqfN/LaqiqpB0/2re0cBGnXHscBcXHWqTp/uv6FXxBaUp47EeV/jg2meqsbGaa\nRDYyFrxnU5+M6HWiUTtmCjHY2H/njgXifgRBBD2dBIyCqSm/iFaME5RoN75r81L6\nnTbwEkSq4i7d4eWrn6BqMbwqEBMbD6OzFl4jccx0Jber54clwPo1Gk5Q0lDS8gk5\nsEv/NCMnujGH0tf41kSGVvlBzpIQWubH8cUrn1nxUNjOIyLkbvxZy9Uhnw2He9XY\nFFH0gHVVAgMBAAECggEAAjmyamaTsEAyxCBVAYlU8ZqHeNmhdgrDkX5cvzL/Z7q8\nNqi9hjKWM9lWyifl4MdLLLdNLA5JQ6OeLKmsPtkLdKxmV0M8dTGoPqsjyq7MrlLz\n5Ci8xcircLXXh8uJbcMJracXHMQZPjeTZbvWI/REqoMt1Q8fANPspJYyHV3EziWR\nILTIc5v4dRR5c1dQVIDGMP+RvIQmoBUvyAUmmkdB5YeLYgccDOaVUS4yomnz36Uh\n3p23QS6+ikC22dIlZ9LedEcXDe5afMg+geXkD4r3AXEPf7VZXPSlSnVHyW8ML6KR\npTQb9E+KAhmc8kQw2nBk5revrs6CqSmTh6zMrWRpQQKBgQDM6RgCC1aTlQmbERSK\nLw0I4aZp404O1ygaLRpvXjwfkj+JGm8XBHGwgq9tQTx4Y4xyOPlml0bT00ggOoO5\nqxiFUkF6Rl1peqZuVcqrtumWf++5dgFKQhLhl2BoPHoIlrmYI1nc2gZ+NOwCK0iP\nIALNqzT/y2UHrk1fDxyQmTjPtQKBgQDLPj4g8AZz53JL398/Pe0vLSLa0y/kV5iT\nHzLukXK4yftWW8tOlCbg+uwowYm00TXyTGZkOu2DaK5yBnNM/O96+9IF3Tj13pUy\nDQvCbNW+XmJmt3vd3irUaXIkTlY3U2+KY46U9aZ5Uo+oja7+9MDlHqT/LDHk0ULT\nhMTTbz5TIQKBgDJJ8o5t4e2OYjEgW/4d1gEcAA90ra+OtlTWROqYIgFNjzJCvojT\nmmNLb2pM3F5fcBSITw0Si1tpOwZN1g43I2l06oTrx/kfFMF3ZKoH1gQNmfPWNjLX\nTHL5B7wNO5XoB9yCsIc3KujGbDWMEd6uaIG5RuSQMldUO8DcoJIMSJkRAoGAV4AR\nkW6k6ItxSrc0Tu7jSVc+VUVsrfsEZfqdm9YktOfIfFKCwe7Imj2NJLLGDYGwnwND\nZc106glMaSzbwP54P9NghUPLvRa51tWFBYyDrTTHWn+OJWP7vn0zNew/9AvIzqS0\nAu+LX1orHR76gytuTHYYBP/K7z8kbRoQ/xI6m+ECgYAmbPNO6nwlHEafKCjOBNqc\nQpIlgQHcHgpxnwuFlY4L8ykJs3JwQqSD1+UsxJpA6zLZVLMwnvltcjaiSwsjlogE\nmk4qX0XEBg4CVQ8cZtPkkwj3zo1TJGz+olWRgsJGl6mIUPW64V12D5L8q5NO5guE\nvAUrRl2ieTAUN5y0STMmVA==\n-----END PRIVATE KEY-----\n",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoq6oOECPlb3BjmCOKzcb\nQIcWz1eciI88wQPsdQEsClHwHxzAKSbOlKSpebMyBcKXoecf8P8XiXYGE6jhKnzf\ny2qoqqQdP9q3tHARp1x7HAXFx1qk6f7r+hV8QWlKeOxHlf44NpnqrGxmmkQ2Mha8\nZ1OfjOh1olE7Zgox2Nh/544F4n4EQQQ9nQSMgqkpv4hWjBOUaDe+a/NS+p028BJE\nquIu3eHlq5+gajG8KhATGw+jsxZeI3HMdCW3q+eHJcD6NRpOUNJQ0vIJObBL/zQj\nJ7oxh9LX+NZEhlb5Qc6SEFrmx/HFK59Z8VDYziMi5G78WcvVIZ8Nh3vV2BRR9IB1\nVQIDAQAB\n-----END PUBLIC KEY-----\n",
+      "balance": 0,
+      "created": "2025-08-27T15:23:05.493Z",
+      "passphrase": "ability advice alarm absurd absent adult absent alcohol acoustic actress adapt about"
     }
   }
 }

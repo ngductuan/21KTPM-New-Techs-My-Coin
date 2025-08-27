@@ -17,7 +17,7 @@ import Link from "next/link"
 export default function AccessWalletPage() {
   const router = useRouter()
   const [privateKey, setPrivateKey] = useState("")
-  const [passphrase, setPassphrase] = useState("")
+  const [passphraseInput, setPassphraseInput] = useState("")
   const [walletFile, setWalletFile] = useState<File | null>(null)
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -39,8 +39,7 @@ export default function AccessWalletPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          privateKey: privateKey.trim(),
-          passphrase: passphrase.trim() || undefined
+          privateKey: privateKey.trim()
         })
       })
 
@@ -61,8 +60,41 @@ export default function AccessWalletPage() {
     }
   }
 
-  const handleMnemonicAccess = () => {
-    setError("Mnemonic phrase access is not yet implemented. Please use private key access.")
+  const handlePassphraseAccess = async () => {
+    if (!passphraseInput.trim()) {
+      setError("Please enter your passphrase")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch('/api/wallet/access', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          passphrase: passphraseInput.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Store wallet address in localStorage
+        localStorage.setItem('currentWalletAddress', data.data.address)
+        router.push("/wallet")
+      } else {
+        setError(data.error || 'Failed to access wallet with passphrase')
+      }
+    } catch (error) {
+      console.error('Error accessing wallet with passphrase:', error)
+      setError('Network error. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,8 +173,8 @@ export default function AccessWalletPage() {
               <Tabs defaultValue="private-key" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="private-key">Private Key</TabsTrigger>
-                  <TabsTrigger value="mnemonic">Mnemonic</TabsTrigger>
-                  <TabsTrigger value="keystore">Keystore File</TabsTrigger>
+                  <TabsTrigger value="mnemonic">Passphrase</TabsTrigger>
+                  <TabsTrigger value="keystore">Wallet File</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="private-key" className="space-y-4 p-4">
@@ -160,12 +192,12 @@ export default function AccessWalletPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="passphrase">Passphrase (Optional)</Label>
+                    <Label htmlFor="optional-passphrase">Passphrase (Optional)</Label>
                     <Input
-                      id="passphrase"
+                      id="optional-passphrase"
                       type="password"
-                      value={passphrase}
-                      onChange={(e) => setPassphrase(e.target.value)}
+                      value={passphraseInput}
+                      onChange={(e) => setPassphraseInput(e.target.value)}
                       placeholder="Enter passphrase if used during wallet creation"
                     />
                   </div>
@@ -203,9 +235,9 @@ export default function AccessWalletPage() {
                     </Label>
                     <Textarea
                       id="passphrase-input"
-                      value={passphrase}
-                      onChange={(e) => setPassphrase(e.target.value)}
-                      placeholder="Enter your passphrase"
+                      value={passphraseInput}
+                      onChange={(e) => setPassphraseInput(e.target.value)}
+                      placeholder="Enter your wallet passphrase (12 words)"
                       className="font-mono"
                       rows={3}
                     />
@@ -217,11 +249,22 @@ export default function AccessWalletPage() {
                   )}
                   <Alert>
                     <AlertDescription>
-                      Enter your passphrase to access your wallet. This feature is currently limited.
+                      Enter the passphrase that was generated when you created your wallet. This is usually 12 words separated by spaces.
                     </AlertDescription>
                   </Alert>
-                  <Button onClick={handleMnemonicAccess} disabled={!passphrase} className="w-full">
-                    Access Wallet
+                  <Button 
+                    onClick={handlePassphraseAccess} 
+                    disabled={!passphraseInput.trim() || isLoading} 
+                    className="w-full"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 mr-2 animate-spin" />
+                        Accessing Wallet...
+                      </>
+                    ) : (
+                      'Access Wallet'
+                    )}
                   </Button>
                 </TabsContent>
 
@@ -229,7 +272,7 @@ export default function AccessWalletPage() {
                   <div>
                     <Label htmlFor="walletFile" className="flex items-center space-x-2 mb-2">
                       <Upload className="w-4 h-4" />
-                      <span>Keystore File</span>
+                      <span>Wallet File</span>
                     </Label>
                     <Input
                       id="walletFile"
@@ -241,22 +284,38 @@ export default function AccessWalletPage() {
                     {walletFile && <p className="text-sm text-gray-600">Selected: {walletFile.name}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="filePassword">Password</Label>
+                    <Label htmlFor="filePassword">Password (Optional)</Label>
                     <Input
                       id="filePassword"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter wallet password"
+                      placeholder="Enter wallet password if encrypted"
                     />
                   </div>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
                   <Alert>
                     <AlertDescription>
-                      Upload your keystore file and enter the password used when creating the wallet.
+                      Upload the wallet file (.json) that you downloaded when creating your wallet.
                     </AlertDescription>
                   </Alert>
-                  <Button onClick={handleFileAccess} disabled={!walletFile || !password} className="w-full">
-                    Access Wallet
+                  <Button 
+                    onClick={handleFileAccess} 
+                    disabled={!walletFile || isLoading} 
+                    className="w-full"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 mr-2 animate-spin" />
+                        Accessing Wallet...
+                      </>
+                    ) : (
+                      'Access Wallet'
+                    )}
                   </Button>
                 </TabsContent>
               </Tabs>

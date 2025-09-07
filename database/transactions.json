@@ -78,6 +78,33 @@
       "gasPrice": 0.0001,
       "fee": 2.1,
       "blockHash": "000879990fc5700ed3f2f2d473046ddfce0fdf30ea514874d4de503699a41289"
+    },
+    {
+      "id": "4957de5b-9c2d-4d80-a331-d3f122ce3f5c",
+      "from": "0x0000000000000000000000000000000000000000",
+      "to": "0x79d42b736a7b814a56880c23226c615575647ab5",
+      "amount": 100,
+      "timestamp": "2025-08-30T05:40:03.920Z",
+      "signature": "SYSTEM_DEPOSIT",
+      "status": "confirmed",
+      "blockHash": "DEPOSIT_BLOCK",
+      "blockNumber": 0,
+      "gasUsed": 0,
+      "gasPrice": 0,
+      "fee": 0
+    },
+    {
+      "id": "4a7c7028-58b4-4065-9a22-ee1d23470bca",
+      "from": "0x79d42b736a7b814a56880c23226c615575647ab5",
+      "to": "0xb01b3bcc624a35cdeed78666680c4a1e022f4d05",
+      "amount": 10,
+      "timestamp": "2025-08-30T05:41:11.116Z",
+      "signature": "3d57bf4b55ef38520862a96f9627eff6d9635afb9e596fa7f8813a0b0d1f4f95b48784b0a932880e8c2c92318848945a8a85c7e710ffe10d863d3ab72cc596e2e314db04a3036c14a33211aff049489b6240a1ea7a992e6ead7197d8b8780b2ab53fdc9d39b60f414b7abe059f32511f2fca94eb0dc2719359e08fd58bc0e0db7cea5d9628194834c5e4100dfc98d59048daf60e9adfe7dcdab2b1c5a67c4721cfd92090179e67039d3519117981f9f2b8584bf6feea0e8ce293938b1f19df09f0bfb7784c9cdf3034f4586045431be24d56fc6f3bd7c6f45a1993a8d7310263b5b435a59af18dae3cecd894fbb8a633f61d51f2d11788513d369fc2e1abc52e",
+      "status": "confirmed",
+      "gasUsed": 21000,
+      "gasPrice": 0.0001,
+      "fee": 2.1,
+      "blockHash": "000fdcc87b5914cf9c650be2588d77494314ccb6bbacb4ba3f845e478b626e17"
     }
   ],
   "blocks": [],
